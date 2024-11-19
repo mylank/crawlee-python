@@ -165,23 +165,23 @@ class BasicCrawler(Generic[TCrawlingContext]):
     def __init__(
         self,
         *,
+        configuration: Configuration | None = None,
+        event_manager: EventManager | None = None,
         request_provider: RequestProvider | None = None,
-        request_handler: Callable[[TCrawlingContext], Awaitable[None]] | None = None,
+        session_pool: SessionPool | None = None,
+        proxy_configuration: ProxyConfiguration | None = None,
         http_client: BaseHttpClient | None = None,
-        concurrency_settings: ConcurrencySettings | None = None,
+        request_handler: Callable[[TCrawlingContext], Awaitable[None]] | None = None,
         max_request_retries: int = 3,
         max_requests_per_crawl: int | None = None,
         max_session_rotations: int = 10,
-        configuration: Configuration | None = None,
-        request_handler_timeout: timedelta = timedelta(minutes=1),
-        session_pool: SessionPool | None = None,
+        max_crawl_depth: int | None = None,
         use_session_pool: bool = True,
         retry_on_blocked: bool = True,
-        proxy_configuration: ProxyConfiguration | None = None,
+        concurrency_settings: ConcurrencySettings | None = None,
+        request_handler_timeout: timedelta = timedelta(minutes=1),
         statistics: Statistics | None = None,
-        event_manager: EventManager | None = None,
         configure_logging: bool = True,
-        max_crawl_depth: int | None = None,
         _context_pipeline: ContextPipeline[TCrawlingContext] | None = None,
         _additional_context_managers: Sequence[AsyncContextManager] | None = None,
         _logger: logging.Logger | None = None,
@@ -189,10 +189,13 @@ class BasicCrawler(Generic[TCrawlingContext]):
         """A default constructor.
 
         Args:
+            configuration: The configuration object. Some of its properties are used as defaults for the crawler.
+            event_manager: The event manager for managing events for the crawler and all its components.
             request_provider: Provider for requests to be processed by the crawler.
-            request_handler: A callable responsible for handling requests.
+            session_pool: A custom `SessionPool` instance, allowing the use of non-default configuration.
+            proxy_configuration: HTTP proxy configuration used when making requests.
             http_client: HTTP client used by `BasicCrawlingContext.send_request` and the HTTP-based crawling.
-            concurrency_settings: Settings to fine-tune concurrency levels.
+            request_handler: A callable responsible for handling requests.
             max_request_retries: Maximum number of attempts to process a single request.
             max_requests_per_crawl: Maximum number of pages to open during a crawl. The crawl stops upon reaching
                 this limit. Setting this value can help avoid infinite loops in misconfigured crawlers. `None` means
@@ -200,43 +203,48 @@ class BasicCrawler(Generic[TCrawlingContext]):
                 this value.
             max_session_rotations: Maximum number of session rotations per request. The crawler rotates the session
                 if a proxy error occurs or if the website blocks the request.
-            configuration: Crawler configuration.
-            request_handler_timeout: Maximum duration allowed for a single request handler to run.
-            use_session_pool: Enable the use of a session pool for managing sessions during crawling.
-            session_pool: A custom `SessionPool` instance, allowing the use of non-default configuration.
-            retry_on_blocked: If True, the crawler attempts to bypass bot protections automatically.
-            proxy_configuration: HTTP proxy configuration used when making requests.
-            statistics: A custom `Statistics` instance, allowing the use of non-default configuration.
-            event_manager: A custom `EventManager` instance, allowing the use of non-default configuration.
-            configure_logging: If True, the crawler will set up logging infrastructure automatically.
             max_crawl_depth: Maximum crawl depth. If set, the crawler will stop crawling after reaching this depth.
+            use_session_pool: Enable the use of a session pool for managing sessions during crawling.
+            retry_on_blocked: If True, the crawler attempts to bypass bot protections automatically.
+            concurrency_settings: Settings to fine-tune concurrency levels.
+            request_handler_timeout: Maximum duration allowed for a single request handler to run.
+            statistics: A custom `Statistics` instance, allowing the use of non-default configuration.
+            configure_logging: If True, the crawler will set up logging infrastructure automatically.
             _context_pipeline: Enables extending the request lifecycle and modifying the crawling context.
                 Intended for use by subclasses rather than direct instantiation of `BasicCrawler`.
             _additional_context_managers: Additional context managers used throughout the crawler lifecycle.
             _logger: A logger instance, typically provided by a subclass, for consistent logging labels.
         """
-        self._router: Router[TCrawlingContext] | None = None
+        # Core components
+        self._configuration = configuration or Configuration()
+        self._event_manager = event_manager or service_container.get_event_manager()
+        self._request_provider = request_provider
+        self._session_pool = session_pool or SessionPool()
+        self._proxy_configuration = proxy_configuration
+        self._http_client = http_client or HttpxHttpClient()
 
+        # Request router setup
+        self._router: Router[TCrawlingContext] | None = None
         if isinstance(cast(Router, request_handler), Router):
             self._router = cast(Router[TCrawlingContext], request_handler)
         elif request_handler is not None:
             self._router = None
             self.router.default_handler(request_handler)
 
-        self._http_client = http_client or HttpxHttpClient()
-
-        self._context_pipeline = (_context_pipeline or ContextPipeline()).compose(self._check_url_after_redirects)
-
+        # Error & failed request handlers
         self._error_handler: ErrorHandler[TCrawlingContext | BasicCrawlingContext] | None = None
         self._failed_request_handler: FailedRequestHandler[TCrawlingContext | BasicCrawlingContext] | None = None
 
+        # Context pipeline
+        self._context_pipeline = (_context_pipeline or ContextPipeline()).compose(self._check_url_after_redirects)
+
+        # Crawl settings
         self._max_request_retries = max_request_retries
         self._max_requests_per_crawl = max_requests_per_crawl
         self._max_session_rotations = max_session_rotations
+        self._max_crawl_depth = max_crawl_depth
 
-        self._request_provider = request_provider
-        self._configuration = configuration or Configuration()
-
+        # Timeouts
         self._request_handler_timeout = request_handler_timeout
         self._internal_timeout = (
             self._configuration.internal_timeout
@@ -244,9 +252,32 @@ class BasicCrawler(Generic[TCrawlingContext]):
             else max(2 * request_handler_timeout, timedelta(minutes=5))
         )
 
-        self._tld_extractor = TLDExtract(cache_dir=tempfile.TemporaryDirectory().name)
+        # Retry and session settings
+        self._use_session_pool = use_session_pool
+        self._retry_on_blocked = retry_on_blocked
 
-        self._event_manager = event_manager or service_container.get_event_manager()
+        # Logging setup
+        if configure_logging:
+            root_logger = logging.getLogger()
+            configure_logger(root_logger, self._configuration, remove_old_handlers=True)
+            httpx_logger = logging.getLogger('httpx')  # Silence HTTPX logger
+            httpx_logger.setLevel(
+                logging.DEBUG if get_configured_log_level(self._configuration) <= logging.DEBUG else logging.WARNING
+            )
+        self._logger = _logger or logging.getLogger(__name__)
+
+        # Statistics
+        self._statistics = statistics or Statistics(
+            event_manager=self._event_manager,
+            periodic_message_logger=self._logger,
+            log_message='Current request statistics:',
+        )
+
+        # Additional context managers to enter and exit
+        self._additional_context_managers = _additional_context_managers or []
+
+        # Internal, not explicitly configurable components
+        self._tld_extractor = TLDExtract(cache_dir=tempfile.TemporaryDirectory().name)
         self._snapshotter = Snapshotter(
             self._event_manager,
             max_memory_size=ByteSize.from_mb(self._configuration.memory_mbytes)
@@ -254,7 +285,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
             else None,
             available_memory_ratio=self._configuration.available_memory_ratio,
         )
-        self._pool = AutoscaledPool(
+        self._autoscaled_pool = AutoscaledPool(
             system_status=SystemStatus(self._snapshotter),
             is_finished_function=self.__is_finished_function,
             is_task_ready_function=self.__is_task_ready_function,
@@ -262,37 +293,9 @@ class BasicCrawler(Generic[TCrawlingContext]):
             concurrency_settings=concurrency_settings,
         )
 
-        self._use_session_pool = use_session_pool
-        self._session_pool = session_pool or SessionPool()
-
-        self._retry_on_blocked = retry_on_blocked
-
-        if configure_logging:
-            root_logger = logging.getLogger()
-            configure_logger(root_logger, self._configuration, remove_old_handlers=True)
-
-            # Silence HTTPX logger
-            httpx_logger = logging.getLogger('httpx')
-            httpx_logger.setLevel(
-                logging.DEBUG if get_configured_log_level(self._configuration) <= logging.DEBUG else logging.WARNING
-            )
-
-        if not _logger:
-            _logger = logging.getLogger(__name__)
-
-        self._logger = _logger
-
-        self._proxy_configuration = proxy_configuration
-        self._statistics = statistics or Statistics(
-            event_manager=self._event_manager,
-            periodic_message_logger=self._logger,
-            log_message='Current request statistics:',
-        )
-        self._additional_context_managers = _additional_context_managers or []
-
+        # State flags
         self._running = False
         self._has_finished_before = False
-        self._max_crawl_depth = max_crawl_depth
 
     @property
     def log(self) -> logging.Logger:
@@ -486,7 +489,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
             for context_manager in self._additional_context_managers:
                 await exit_stack.enter_async_context(context_manager)
 
-            await self._pool.run()
+            await self._autoscaled_pool.run()
 
     async def add_requests(
         self,
