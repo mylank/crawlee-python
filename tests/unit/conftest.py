@@ -4,14 +4,14 @@
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Callable, cast
+from typing import TYPE_CHECKING, Callable
 
 import pytest
 from httpx import URL
 from proxy import Proxy
 
 from crawlee import service_container
-from crawlee.configuration import Configuration
+from crawlee.events._local_event_manager import LocalEventManager
 from crawlee.memory_storage_client import MemoryStorageClient
 from crawlee.proxy_configuration import ProxyInfo
 from crawlee.storages import _creation_management
@@ -28,7 +28,9 @@ def reset_globals(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Callable[[
         monkeypatch.setenv('CRAWLEE_STORAGE_DIR', str(tmp_path))
 
         # Reset services in crawlee.service_container
-        cast(dict, service_container._services).clear()
+        service_container._services.local_storage_client = MemoryStorageClient()
+        service_container._services.cloud_storage_client = MemoryStorageClient()
+        service_container._services.event_manager = LocalEventManager()
 
         # Clear creation-related caches to ensure no state is carried over between tests
         monkeypatch.setattr(_creation_management, '_cache_dataset_by_id', {})
@@ -60,12 +62,11 @@ def _isolate_test_environment(reset_globals: Callable[[], None]) -> None:
 
 @pytest.fixture
 def memory_storage_client(tmp_path: Path) -> MemoryStorageClient:
-    cfg = Configuration(
+    return MemoryStorageClient(
         write_metadata=True,
         persist_storage=True,
-        crawlee_storage_dir=str(tmp_path),  # type: ignore
+        storage_dir=str(tmp_path),
     )
-    return MemoryStorageClient(cfg)
 
 
 @pytest.fixture

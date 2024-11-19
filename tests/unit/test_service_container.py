@@ -5,7 +5,7 @@ from unittest.mock import Mock
 import pytest
 
 from crawlee import service_container
-from crawlee.configuration import Configuration
+from crawlee.configuration import Configuration, get_global_configuration, set_global_configuration
 from crawlee.errors import ServiceConflictError
 from crawlee.events._local_event_manager import LocalEventManager
 from crawlee.memory_storage_client._memory_storage_client import MemoryStorageClient
@@ -32,23 +32,24 @@ async def test_overwrite_event_manager() -> None:
 
 
 async def test_get_configuration() -> None:
-    configuration = service_container.get_configuration()
+    configuration = get_global_configuration()
     assert isinstance(configuration, Configuration)
 
 
 async def test_set_configuration() -> None:
     configuration = Mock()
-    service_container.set_configuration(configuration)
-    assert service_container.get_configuration() is configuration
+    set_global_configuration(configuration)
+
+    assert Configuration.get_global_configuration() is get_global_configuration() is configuration
 
 
 async def test_overwrite_configuration() -> None:
     configuration = Mock()
-    service_container.set_configuration(configuration)
-    service_container.set_configuration(configuration)
+    set_global_configuration(configuration)
+    set_global_configuration(configuration)
 
     with pytest.raises(ServiceConflictError):
-        service_container.set_configuration(Mock())
+        set_global_configuration(Mock())
 
 
 async def test_get_storage_client() -> None:
@@ -57,8 +58,6 @@ async def test_get_storage_client() -> None:
 
     with pytest.raises(RuntimeError):
         service_container.get_storage_client(client_type='cloud')
-
-    service_container.set_default_storage_client_type('cloud')
 
     with pytest.raises(RuntimeError):
         service_container.get_storage_client()

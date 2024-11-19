@@ -109,6 +109,8 @@ def _rm_from_cache_by_name(storage_class: type, name: str) -> None:
 
 
 def _get_default_storage_id(configuration: Configuration, storage_class: type[TResource]) -> str:
+    # TODO: REFACTOR
+
     if issubclass(storage_class, Dataset):
         return configuration.default_dataset_id
     if issubclass(storage_class, KeyValueStore):
@@ -128,7 +130,7 @@ async def open_storage(
     name: str | None = None,
 ) -> TResource:
     """Open either a new storage or restore an existing one and return it."""
-    configuration = configuration or Configuration.get_global_configuration()
+    configuration = configuration or Configuration()
     storage_client = storage_client or service_container.get_storage_client()
 
     # Try to restore the storage from cache by name

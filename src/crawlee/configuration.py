@@ -12,7 +12,7 @@ from crawlee._utils.models import timedelta_ms
 if TYPE_CHECKING:
     from typing_extensions import Self
 
-__all__ = ['Configuration']
+__all__ = ['Configuration', 'get_global_configuration', 'set_global_configuration']
 
 
 @docs_group('Data structures')
@@ -232,17 +232,27 @@ class Configuration(BaseSettings):
 
     @classmethod
     def get_global_configuration(cls) -> Self:
-        """Retrieve the global instance of the configuration."""
-        from crawlee import service_container
+        """Retrieve the global instance of the configuration.
 
-        if service_container.get_configuration_if_set() is None:
-            service_container.set_configuration(cls())
+        TODO: Can we remove this?
+        """
+        cfg = get_global_configuration()
 
-        global_instance = service_container.get_configuration()
+        if not isinstance(cfg, cls):
+            raise TypeError(f'Requested global configuration object of type {cls}, but {cfg.__class__} was found')
 
-        if not isinstance(global_instance, cls):
-            raise TypeError(
-                f'Requested global configuration object of type {cls}, but {global_instance.__class__} was found'
-            )
+        return cfg
 
-        return global_instance
+
+_configuration = Configuration()
+
+
+def set_global_configuration(configuration: Configuration) -> None:
+    """Set the global configuration instance."""
+    global _configuration  # noqa: PLW0603
+    _configuration = configuration
+
+
+def get_global_configuration() -> Configuration:
+    """Retrieve the global instance of the configuration."""
+    return _configuration

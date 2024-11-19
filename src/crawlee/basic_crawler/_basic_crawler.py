@@ -31,6 +31,7 @@ from crawlee._utils.http import is_status_code_client_error
 from crawlee._utils.urls import convert_to_absolute_url, is_url_absolute
 from crawlee._utils.wait import wait_for
 from crawlee.basic_crawler._context_pipeline import ContextPipeline
+from crawlee.configuration import Configuration
 from crawlee.errors import (
     ContextPipelineInitializationError,
     ContextPipelineInterruptedError,
@@ -50,7 +51,6 @@ if TYPE_CHECKING:
 
     from crawlee._types import ConcurrencySettings, HttpMethod, JsonSerializable
     from crawlee.base_storage_client._models import DatasetItemsListPage
-    from crawlee.configuration import Configuration
     from crawlee.events._event_manager import EventManager
     from crawlee.http_clients import BaseHttpClient, HttpResponse
     from crawlee.proxy_configuration import ProxyConfiguration, ProxyInfo
@@ -235,7 +235,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
         self._max_session_rotations = max_session_rotations
 
         self._request_provider = request_provider
-        self._configuration = configuration or service_container.get_configuration()
+        self._configuration = configuration or Configuration()
 
         self._request_handler_timeout = request_handler_timeout
         self._internal_timeout = (
