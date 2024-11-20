@@ -80,9 +80,21 @@ class EventManager:
             delay=self._persist_state_interval,
         )
 
+        self._initialized = False
+
+    @property
+    def initialized(self) -> bool:
+        """Indicates whether the event manager has been initialized."""
+        return self._initialized
+
     async def __aenter__(self) -> EventManager:
         """Initializes the event manager upon entering the async context."""
-        self._emit_persist_state_event_rec_task.start()
+        if not self._initialized:
+            self._emit_persist_state_event_rec_task.start()
+            self._initialized = True
+        else:
+            logger.warning('Calling EventManager.__aenter__(), but event manager was already initialized. Skipping...')
+
         return self
 
     async def __aexit__(
@@ -95,11 +107,15 @@ class EventManager:
 
         This will stop listening for the events, and it will wait for all the event listeners to finish.
         """
-        await self.wait_for_all_listeners_to_complete(timeout=self._close_timeout)
-        self._event_emitter.remove_all_listeners()
-        self._listener_tasks.clear()
-        self._listeners_to_wrappers.clear()
-        await self._emit_persist_state_event_rec_task.stop()
+        if self._initialized:
+            await self.wait_for_all_listeners_to_complete(timeout=self._close_timeout)
+            self._event_emitter.remove_all_listeners()
+            self._listener_tasks.clear()
+            self._listeners_to_wrappers.clear()
+            await self._emit_persist_state_event_rec_task.stop()
+            self._initialized = False
+        else:
+            logger.warning('Calling EventManager.__aexit__(), but event manager was not yet initialized. Skipping...')
 
     def on(self, *, event: Event, listener: Listener) -> None:
         """Add an event listener to the event manager.
@@ -125,9 +141,9 @@ class EventManager:
             self._listener_tasks.add(listener_task)
 
             try:
-                logger.debug('LocalEventManager.on.listener_wrapper(): Awaiting listener task...')
+                logger.debug('EventManager.on.listener_wrapper(): Awaiting listener task...')
                 await listener_task
-                logger.debug('LocalEventManager.on.listener_wrapper(): Listener task completed.')
+                logger.debug('EventManager.on.listener_wrapper(): Listener task completed.')
             except Exception:
                 # We need to swallow the exception and just log it here, otherwise it could break the event emitter
                 logger.exception(
@@ -135,7 +151,7 @@ class EventManager:
                     extra={'event_name': event.value, 'listener_name': listener.__name__},
                 )
             finally:
-                logger.debug('LocalEventManager.on.listener_wrapper(): Removing listener task from the set...')
+                logger.debug('EventManager.on.listener_wrapper(): Removing listener task from the set...')
                 self._listener_tasks.remove(listener_task)
 
         self._listeners_to_wrappers[event][listener].append(listener_wrapper)
@@ -164,6 +180,9 @@ class EventManager:
             event: The event which will be emitted.
             event_data: The data which will be passed to the event listeners.
         """
+        if not self._initialized:
+            raise RuntimeError('EventManager is not initialized. Please use it within async context manager.')
+
         self._event_emitter.emit(event.value, event_data)
 
     async def wait_for_all_listeners_to_complete(self, *, timeout: timedelta | None = None) -> None:
@@ -173,6 +192,8 @@ class EventManager:
             timeout: The maximum time to wait for the event listeners to finish. If they do not complete within
                 the specified timeout, they will be canceled.
         """
+        if not self._initialized:
+            raise RuntimeError('EventManager is not initialized. Please use it within async context manager.')
 
         async def wait_for_listeners() -> None:
             """Gathers all listener tasks and awaits their completion, logging any exceptions encountered."""
