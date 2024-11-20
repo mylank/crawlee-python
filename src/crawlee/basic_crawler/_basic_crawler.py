@@ -259,11 +259,9 @@ class BasicCrawler(Generic[TCrawlingContext]):
         # Logging setup
         if configure_logging:
             root_logger = logging.getLogger()
-            configure_logger(root_logger, self._configuration, remove_old_handlers=True)
+            configure_logger(root_logger, remove_old_handlers=True)
             httpx_logger = logging.getLogger('httpx')  # Silence HTTPX logger
-            httpx_logger.setLevel(
-                logging.DEBUG if get_configured_log_level(self._configuration) <= logging.DEBUG else logging.WARNING
-            )
+            httpx_logger.setLevel(logging.DEBUG if get_configured_log_level() <= logging.DEBUG else logging.WARNING)
         self._logger = _logger or logging.getLogger(__name__)
 
         # Statistics
