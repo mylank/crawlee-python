@@ -31,7 +31,6 @@ from crawlee._utils.http import is_status_code_client_error
 from crawlee._utils.urls import convert_to_absolute_url, is_url_absolute
 from crawlee._utils.wait import wait_for
 from crawlee.basic_crawler._context_pipeline import ContextPipeline
-from crawlee.configuration import Configuration
 from crawlee.errors import (
     ContextPipelineInitializationError,
     ContextPipelineInterruptedError,
@@ -51,6 +50,7 @@ if TYPE_CHECKING:
 
     from crawlee._types import ConcurrencySettings, HttpMethod, JsonSerializable
     from crawlee.base_storage_client._models import DatasetItemsListPage
+    from crawlee.configuration import Configuration
     from crawlee.events._event_manager import EventManager
     from crawlee.http_clients import BaseHttpClient, HttpResponse
     from crawlee.proxy_configuration import ProxyConfiguration, ProxyInfo
@@ -216,7 +216,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
             _logger: A logger instance, typically provided by a subclass, for consistent logging labels.
         """
         # Core components
-        self._configuration = configuration or Configuration()
+        self._configuration = configuration or service_container.get_configuration()
         self._event_manager = event_manager or service_container.get_event_manager()
         self._request_provider = request_provider
         self._session_pool = session_pool or SessionPool()
@@ -279,7 +279,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
         # Internal, not explicitly configurable components
         self._tld_extractor = TLDExtract(cache_dir=tempfile.TemporaryDirectory().name)
         self._snapshotter = Snapshotter(
-            self._event_manager,
+            event_manager=self._event_manager,
             max_memory_size=ByteSize.from_mb(self._configuration.memory_mbytes)
             if self._configuration.memory_mbytes
             else None,
