@@ -215,9 +215,14 @@ class BasicCrawler(Generic[TCrawlingContext]):
             _additional_context_managers: Additional context managers used throughout the crawler lifecycle.
             _logger: A logger instance, typically provided by a subclass, for consistent logging labels.
         """
+        if configuration:
+            service_container.set_configuration(configuration)
+        if event_manager:
+            service_container.set_event_manager(event_manager)
+
+        config = service_container.get_configuration()
+
         # Core components
-        self._configuration = configuration or service_container.get_configuration()
-        self._event_manager = event_manager or service_container.get_event_manager()
         self._request_provider = request_provider
         self._session_pool = session_pool or SessionPool()
         self._proxy_configuration = proxy_configuration
@@ -247,8 +252,8 @@ class BasicCrawler(Generic[TCrawlingContext]):
         # Timeouts
         self._request_handler_timeout = request_handler_timeout
         self._internal_timeout = (
-            self._configuration.internal_timeout
-            if self._configuration.internal_timeout is not None
+            config.internal_timeout
+            if config.internal_timeout is not None
             else max(2 * request_handler_timeout, timedelta(minutes=5))
         )
 
@@ -266,7 +271,6 @@ class BasicCrawler(Generic[TCrawlingContext]):
 
         # Statistics
         self._statistics = statistics or Statistics(
-            event_manager=self._event_manager,
             periodic_message_logger=self._logger,
             log_message='Current request statistics:',
         )
@@ -277,11 +281,8 @@ class BasicCrawler(Generic[TCrawlingContext]):
         # Internal, not explicitly configurable components
         self._tld_extractor = TLDExtract(cache_dir=tempfile.TemporaryDirectory().name)
         self._snapshotter = Snapshotter(
-            event_manager=self._event_manager,
-            max_memory_size=ByteSize.from_mb(self._configuration.memory_mbytes)
-            if self._configuration.memory_mbytes
-            else None,
-            available_memory_ratio=self._configuration.available_memory_ratio,
+            max_memory_size=ByteSize.from_mb(config.memory_mbytes) if config.memory_mbytes else None,
+            available_memory_ratio=config.available_memory_ratio,
         )
         self._autoscaled_pool = AutoscaledPool(
             system_status=SystemStatus(self._snapshotter),
@@ -361,7 +362,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
     ) -> RequestProvider:
         """Return the configured request provider. If none is configured, open and return the default request queue."""
         if not self._request_provider:
-            self._request_provider = await RequestQueue.open(id=id, name=name, configuration=self._configuration)
+            self._request_provider = await RequestQueue.open(id=id, name=name)
 
         return self._request_provider
 
@@ -372,7 +373,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
         name: str | None = None,
     ) -> Dataset:
         """Return the dataset with the given ID or name. If none is provided, return the default dataset."""
-        return await Dataset.open(id=id, name=name, configuration=self._configuration)
+        return await Dataset.open(id=id, name=name)
 
     async def get_key_value_store(
         self,
@@ -381,7 +382,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
         name: str | None = None,
     ) -> KeyValueStore:
         """Return the key-value store with the given ID or name. If none is provided, return the default KVS."""
-        return await KeyValueStore.open(id=id, name=name, configuration=self._configuration)
+        return await KeyValueStore.open(id=id, name=name)
 
     def error_handler(
         self, handler: ErrorHandler[TCrawlingContext | BasicCrawlingContext]
@@ -426,7 +427,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
             request_provider = await self.get_request_provider()
             if purge_request_queue and isinstance(request_provider, RequestQueue):
                 await request_provider.drop()
-                self._request_provider = await RequestQueue.open(configuration=self._configuration)
+                self._request_provider = await RequestQueue.open()
 
         if requests is not None:
             await self.add_requests(requests)
@@ -476,8 +477,10 @@ class BasicCrawler(Generic[TCrawlingContext]):
         return final_statistics
 
     async def _run_crawler(self) -> None:
+        event_manager = service_container.get_event_manager()
+
         async with AsyncExitStack() as exit_stack:
-            await exit_stack.enter_async_context(self._event_manager)
+            await exit_stack.enter_async_context(event_manager)
             await exit_stack.enter_async_context(self._snapshotter)
             await exit_stack.enter_async_context(self._statistics)
 

@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, AsyncIterator, TypeVar, overload
+from typing import Any, AsyncIterator, TypeVar, overload
 
 from typing_extensions import override
 
+from crawlee import service_container
 from crawlee._utils.docs import docs_group
 from crawlee.base_storage_client._models import KeyValueStoreKeyInfo, KeyValueStoreMetadata
 from crawlee.storages._base_storage import BaseStorage
-
-if TYPE_CHECKING:
-    from crawlee.base_storage_client import BaseStorageClient
-    from crawlee.configuration import Configuration
 
 T = TypeVar('T')
 
@@ -50,19 +47,14 @@ class KeyValueStore(BaseStorage):
     ```
     """
 
-    def __init__(
-        self,
-        id: str,
-        name: str | None,
-        configuration: Configuration,
-        client: BaseStorageClient,
-    ) -> None:
+    def __init__(self, id: str, name: str | None) -> None:
+        storage_client = service_container.get_storage_client()
+
         self._id = id
         self._name = name
-        self._configuration = configuration
 
         # Get resource clients from storage client
-        self._resource_client = client.key_value_store(self._id)
+        self._resource_client = storage_client.key_value_store(self._id)
 
     @override
     @property
@@ -80,23 +72,10 @@ class KeyValueStore(BaseStorage):
 
     @override
     @classmethod
-    async def open(
-        cls,
-        *,
-        id: str | None = None,
-        name: str | None = None,
-        configuration: Configuration | None = None,
-        storage_client: BaseStorageClient | None = None,
-    ) -> KeyValueStore:
+    async def open(cls, *, id: str | None = None, name: str | None = None) -> KeyValueStore:
         from crawlee.storages._creation_management import open_storage
 
-        return await open_storage(
-            storage_class=cls,
-            id=id,
-            name=name,
-            configuration=configuration,
-            storage_client=storage_client,
-        )
+        return await open_storage(storage_class=cls, id=id, name=name)
 
     @override
     async def drop(self) -> None:

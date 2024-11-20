@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, AsyncIterator, Literal, TextIO, TypedDict, cas
 
 from typing_extensions import NotRequired, Required, Unpack, override
 
+from crawlee import service_container
 from crawlee._utils.byte_size import ByteSize
 from crawlee._utils.docs import docs_group
 from crawlee._utils.file import json_dumps
@@ -193,20 +194,15 @@ class Dataset(BaseStorage):
     _EFFECTIVE_LIMIT_SIZE = _MAX_PAYLOAD_SIZE - (_MAX_PAYLOAD_SIZE * _SAFETY_BUFFER_PERCENT)
     """Calculated payload limit considering safety buffer."""
 
-    def __init__(
-        self,
-        id: str,
-        name: str | None,
-        configuration: Configuration,
-        client: BaseStorageClient,
-    ) -> None:
+    def __init__(self, id: str, name: str | None) -> None:
+        storage_client = service_container.get_storage_client()
+
         self._id = id
         self._name = name
-        self._configuration = configuration
 
         # Get resource clients from storage client
-        self._resource_client = client.dataset(self._id)
-        self._resource_collection_client = client.datasets()
+        self._resource_client = storage_client.dataset(self._id)
+        self._resource_collection_client = storage_client.datasets()
 
     @override
     @property
@@ -230,13 +226,7 @@ class Dataset(BaseStorage):
     ) -> Dataset:
         from crawlee.storages._creation_management import open_storage
 
-        return await open_storage(
-            storage_class=cls,
-            id=id,
-            name=name,
-            configuration=configuration,
-            storage_client=storage_client,
-        )
+        return await open_storage(storage_class=cls, id=id, name=name)
 
     @override
     async def drop(self) -> None:
