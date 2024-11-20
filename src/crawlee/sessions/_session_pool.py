@@ -6,6 +6,7 @@ import random
 from logging import getLogger
 from typing import TYPE_CHECKING, Callable, Literal, overload
 
+from crawlee import service_container
 from crawlee._utils.docs import docs_group
 from crawlee.events._types import Event, EventPersistStateData
 from crawlee.sessions import Session
@@ -52,10 +53,11 @@ class SessionPool:
             persist_state_kvs_name: The name of the `KeyValueStore` used for state persistence.
             persist_state_key: The key under which the session pool's state is stored in the `KeyValueStore`.
         """
+        self._event_manager = event_manager or service_container.get_event_manager()
+
         self._max_pool_size = max_pool_size
         self._session_settings = create_session_settings or {}
         self._create_session_function = create_session_function
-        self._event_manager = event_manager
         self._persistence_enabled = persistence_enabled
         self._persist_state_kvs_name = persist_state_kvs_name
         self._persist_state_key = persist_state_key

@@ -148,12 +148,7 @@ class RequestQueue(BaseStorage, RequestProvider):
 
     @override
     @classmethod
-    async def open(
-        cls,
-        *,
-        id: str | None = None,
-        name: str | None = None,
-    ) -> RequestQueue:
+    async def open(cls, *, id: str | None = None, name: str | None = None) -> RequestQueue:
         from crawlee.storages._creation_management import open_storage
 
         return await open_storage(storage_class=cls, id=id, name=name)

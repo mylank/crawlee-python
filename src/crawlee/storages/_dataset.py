@@ -20,9 +20,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from crawlee._types import JsonSerializable, PushDataKwargs
-    from crawlee.base_storage_client import BaseStorageClient
     from crawlee.base_storage_client._models import DatasetItemsListPage
-    from crawlee.configuration import Configuration
 
 
 logger = logging.getLogger(__name__)
@@ -216,14 +214,7 @@ class Dataset(BaseStorage):
 
     @override
     @classmethod
-    async def open(
-        cls,
-        *,
-        id: str | None = None,
-        name: str | None = None,
-        configuration: Configuration | None = None,
-        storage_client: BaseStorageClient | None = None,
-    ) -> Dataset:
+    async def open(cls, *, id: str | None = None, name: str | None = None) -> Dataset:
         from crawlee.storages._creation_management import open_storage
 
         return await open_storage(storage_class=cls, id=id, name=name)
