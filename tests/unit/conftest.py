@@ -7,6 +7,7 @@ import os
 from typing import TYPE_CHECKING, Callable
 
 import pytest
+from apify import Configuration
 from httpx import URL
 from proxy import Proxy
 
@@ -28,9 +29,9 @@ def reset_globals(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> Callable[[
         monkeypatch.setenv('CRAWLEE_STORAGE_DIR', str(tmp_path))
 
         # Reset services in crawlee.service_container
-        service_container._services.local_storage_client = MemoryStorageClient()
-        service_container._services.cloud_storage_client = MemoryStorageClient()
-        service_container._services.event_manager = LocalEventManager()
+        service_container.set_configuration(Configuration())
+        service_container.set_storage_client(MemoryStorageClient())
+        service_container.set_event_manager(LocalEventManager())
 
         # Clear creation-related caches to ensure no state is carried over between tests
         monkeypatch.setattr(_creation_management, '_cache_dataset_by_id', {})

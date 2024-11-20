@@ -87,7 +87,7 @@ class Statistics(Generic[TStatisticsState]):
         self.error_tracker = ErrorTracker()
         self.error_tracker_retry = ErrorTracker()
 
-        self._events = event_manager or crawlee.service_container.get_event_manager()
+        self._event_manager = event_manager or crawlee.service_container.get_event_manager()
 
         self._requests_in_progress = dict[str, RequestProcessingRecord]()
 
@@ -114,7 +114,7 @@ class Statistics(Generic[TStatisticsState]):
             self._key_value_store = await KeyValueStore.open(name=self._persist_state_kvs_name)
 
         await self._maybe_load_statistics()
-        self._events.on(event=Event.PERSIST_STATE, listener=self._persist_state)
+        self._event_manager.on(event=Event.PERSIST_STATE, listener=self._persist_state)
 
         self._periodic_logger.start()
 
@@ -128,7 +128,7 @@ class Statistics(Generic[TStatisticsState]):
     ) -> None:
         """Stop collecting statistics."""
         self.state.crawler_finished_at = datetime.now(timezone.utc)
-        self._events.off(event=Event.PERSIST_STATE, listener=self._persist_state)
+        self._event_manager.off(event=Event.PERSIST_STATE, listener=self._persist_state)
         await self._periodic_logger.stop()
         await self._persist_state(event_data=EventPersistStateData(is_migrating=False))
 

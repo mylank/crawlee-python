@@ -10,13 +10,7 @@ from typing import TYPE_CHECKING, TypeVar, cast
 import psutil
 from sortedcontainers import SortedList
 
-from crawlee._autoscaling.types import (
-    ClientSnapshot,
-    CpuSnapshot,
-    EventLoopSnapshot,
-    MemorySnapshot,
-    Snapshot,
-)
+from crawlee._autoscaling.types import ClientSnapshot, CpuSnapshot, EventLoopSnapshot, MemorySnapshot, Snapshot
 from crawlee._utils.byte_size import ByteSize
 from crawlee._utils.docs import docs_group
 from crawlee._utils.recurring_task import RecurringTask
