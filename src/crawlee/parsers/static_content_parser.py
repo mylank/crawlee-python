@@ -186,7 +186,7 @@ class _HttpCrawler(Generic[TParseResult, TCrawlingContext], BasicCrawler[TCrawli
         self.parser = parser
 
         kwargs['_context_pipeline'] = (
-            ContextPipeline[TCrawlingContext]()
+            ContextPipeline()
             .compose(self._make_http_request)
             .compose(self._parse_http_response)
             .compose(self._handle_blocked_request)

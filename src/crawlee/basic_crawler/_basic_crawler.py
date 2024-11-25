@@ -30,7 +30,7 @@ from crawlee._utils.docs import docs_group
 from crawlee._utils.http import is_status_code_client_error
 from crawlee._utils.urls import convert_to_absolute_url, is_url_absolute
 from crawlee._utils.wait import wait_for
-from crawlee.basic_crawler._context_pipeline import ContextPipeline
+from crawlee.basic_crawler._context_pipeline import ContextPipeline, _ContextPipeline
 from crawlee.errors import (
     ContextPipelineInitializationError,
     ContextPipelineInterruptedError,
@@ -126,7 +126,7 @@ class BasicCrawlerOptions(TypedDict, Generic[TCrawlingContext]):
     """Limits crawl depth from 0 (initial requests) up to the specified `max_crawl_depth`.
     Requests at the maximum depth are processed, but no further links are enqueued."""
 
-    _context_pipeline: NotRequired[ContextPipeline[TCrawlingContext]]
+    _context_pipeline: NotRequired[_ContextPipeline[TCrawlingContext]]
     """Enables extending the request lifecycle and modifying the crawling context. Intended for use by
     subclasses rather than direct instantiation of `BasicCrawler`."""
 
@@ -182,7 +182,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
         event_manager: EventManager | None = None,
         configure_logging: bool = True,
         max_crawl_depth: int | None = None,
-        _context_pipeline: ContextPipeline[TCrawlingContext] | None = None,
+        _context_pipeline: _ContextPipeline[TCrawlingContext] | None = None,
         _additional_context_managers: Sequence[AsyncContextManager] | None = None,
         _logger: logging.Logger | None = None,
     ) -> None:

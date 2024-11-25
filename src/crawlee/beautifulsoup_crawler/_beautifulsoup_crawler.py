@@ -58,7 +58,7 @@ class BeautifulSoupCrawler(_HttpCrawler[BeautifulSoup, ParsedHttpCrawlingContext
         parser: BeautifulSoupParser = 'lxml',
         additional_http_error_status_codes: Iterable[int] = (),
         ignore_http_error_status_codes: Iterable[int] = (),
-        **kwargs: Unpack[BasicCrawlerOptions[HttpCrawlingContext]],
+        **kwargs: Unpack[BasicCrawlerOptions[ParsedHttpCrawlingContext[BeautifulSoup]]],
     ) -> None:
         """A default constructor.
 
