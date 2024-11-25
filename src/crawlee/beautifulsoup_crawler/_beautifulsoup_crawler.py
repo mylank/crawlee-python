@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 BeautifulSoupParser = Literal['html.parser', 'lxml', 'xml', 'html5lib']
 
 
-class BeautifulSoupCrawler(_HttpCrawler[BeautifulSoup, ParsedHttpCrawlingContext[BeautifulSoup]]):
+class BeautifulSoupCrawler(_HttpCrawler[BeautifulSoup]):
     """A web crawler for performing HTTP requests and parsing HTML/XML content.
 
     The `BeautifulSoupCrawler` builds on top of the `BasicCrawler`, which means it inherits all of its features.

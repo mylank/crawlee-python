@@ -139,7 +139,7 @@ class BeautifulSoupContentParser(StaticContentParser[BeautifulSoup]):
         return urls
 
 
-class _HttpCrawler(Generic[TParseResult, TCrawlingContext], BasicCrawler[TCrawlingContext]):
+class _HttpCrawler(Generic[TParseResult], BasicCrawler[ParsedHttpCrawlingContext[TParseResult]]):
     """A web crawler for performing HTTP requests.
 
     The `_HttpCrawler` builds on top of the `BasicCrawler`, which means it inherits all of its features. On top
@@ -181,7 +181,7 @@ class _HttpCrawler(Generic[TParseResult, TCrawlingContext], BasicCrawler[TCrawli
         parser: StaticContentParser[TParseResult],
         additional_http_error_status_codes: Iterable[int] = (),
         ignore_http_error_status_codes: Iterable[int] = (),
-        **kwargs: Unpack[BasicCrawlerOptions[TCrawlingContext]],
+        **kwargs: Unpack[BasicCrawlerOptions[ParsedHttpCrawlingContext[TParseResult]]],
     ) -> None:
         self.parser = parser
 
@@ -286,13 +286,13 @@ class _HttpCrawler(Generic[TParseResult, TCrawlingContext], BasicCrawler[TCrawli
                 raise SessionError(blocked_info.reason)
         yield context
 
-class HttpCrawler(_HttpCrawler[bytes, HttpCrawlingContext]):
+class HttpCrawler(_HttpCrawler[bytes]):
     def __init__(
         self,
         *,
         additional_http_error_status_codes: Iterable[int] = (),
         ignore_http_error_status_codes: Iterable[int] = (),
-        **kwargs: Unpack[BasicCrawlerOptions[HttpCrawlingContext]],
+        **kwargs: Unpack[BasicCrawlerOptions[ParsedHttpCrawlingContext[bytes]]],
     ) -> None:
         """
         I didn't find another way how to make default constructor specifying one of type on generics.
