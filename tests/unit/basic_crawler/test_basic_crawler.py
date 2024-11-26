@@ -18,7 +18,7 @@ from httpx import URL
 from crawlee import ConcurrencySettings, EnqueueStrategy, Glob
 from crawlee._request import BaseRequestData, Request
 from crawlee._types import BasicCrawlingContext, EnqueueLinksKwargs, HttpHeaders
-from crawlee.basic_crawler import BasicCrawler
+from crawlee.basic_crawler import BasicCrawler, ContextPipeline
 from crawlee.configuration import Configuration
 from crawlee.errors import SessionError, UserDefinedErrorHandlerError
 from crawlee.statistics import FinalStatistics
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 
 async def test_processes_requests() -> None:
-    crawler = BasicCrawler(request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']))
+    crawler = BasicCrawler(request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']), _context_pipeline=ContextPipeline())
     calls = list[str]()
 
     @crawler.router.default_handler
@@ -44,7 +44,7 @@ async def test_processes_requests() -> None:
 
 
 async def test_processes_requests_from_run_args() -> None:
-    crawler = BasicCrawler(request_provider=RequestList())
+    crawler = BasicCrawler(request_provider=RequestList(), _context_pipeline=ContextPipeline())
     calls = list[str]()
 
     @crawler.router.default_handler
@@ -57,7 +57,7 @@ async def test_processes_requests_from_run_args() -> None:
 
 
 async def test_allows_multiple_run_calls() -> None:
-    crawler = BasicCrawler(request_provider=RequestList())
+    crawler = BasicCrawler(request_provider=RequestList(), _context_pipeline=ContextPipeline())
     calls = list[str]()
 
     @crawler.router.default_handler
@@ -78,7 +78,8 @@ async def test_allows_multiple_run_calls() -> None:
 
 
 async def test_retries_failed_requests() -> None:
-    crawler = BasicCrawler(request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']))
+    crawler = BasicCrawler(request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']),
+                           _context_pipeline=ContextPipeline())
     calls = list[str]()
 
     @crawler.router.default_handler
@@ -105,6 +106,7 @@ async def test_respects_no_retry() -> None:
             ['http://a.com/', 'http://b.com/', Request.from_url(url='http://c.com/', no_retry=True)]
         ),
         max_request_retries=3,
+        _context_pipeline=ContextPipeline()
     )
     calls = list[str]()
 
@@ -136,6 +138,7 @@ async def test_respects_request_specific_max_retries() -> None:
             ]
         ),
         max_request_retries=1,
+        _context_pipeline=ContextPipeline()
     )
     calls = list[str]()
 
@@ -170,6 +173,7 @@ async def test_calls_error_handler() -> None:
     crawler = BasicCrawler(
         request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']),
         max_request_retries=3,
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -212,6 +216,7 @@ async def test_calls_error_handler() -> None:
 async def test_calls_error_handler_for_sesion_errors() -> None:
     crawler = BasicCrawler(
         max_session_rotations=1,
+        _context_pipeline = ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -233,6 +238,7 @@ async def test_handles_error_in_error_handler() -> None:
     crawler = BasicCrawler(
         request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']),
         max_request_retries=3,
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -252,6 +258,7 @@ async def test_calls_failed_request_handler() -> None:
     crawler = BasicCrawler(
         request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']),
         max_request_retries=3,
+        _context_pipeline=ContextPipeline()
     )
     calls = list[tuple[BasicCrawlingContext, Exception]]()
 
@@ -275,6 +282,7 @@ async def test_handles_error_in_failed_request_handler() -> None:
     crawler = BasicCrawler(
         request_provider=RequestList(['http://a.com/', 'http://b.com/', 'http://c.com/']),
         max_request_retries=3,
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -301,6 +309,7 @@ async def test_send_request_works(respx_mock: respx.MockRouter) -> None:
     crawler = BasicCrawler(
         request_provider=RequestList(['http://a.com/']),
         max_request_retries=3,
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -427,7 +436,9 @@ INCLUDE_TEST_URLS = (
 )
 async def test_enqueue_strategy(test_input: AddRequestsTestInput) -> None:
     visit = Mock()
-    crawler = BasicCrawler(request_provider=RequestList([Request.from_url('https://someplace.com/', label='start')]))
+    crawler = BasicCrawler(
+        request_provider=RequestList([Request.from_url('https://someplace.com/', label='start')]),
+        _context_pipeline=ContextPipeline())
 
     @crawler.router.handler('start')
     async def start_handler(context: BasicCrawlingContext) -> None:
@@ -452,6 +463,7 @@ async def test_session_rotation() -> None:
         request_provider=RequestList([Request.from_url('https://someplace.com/', label='start')]),
         max_session_rotations=7,
         max_request_retries=1,
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -473,6 +485,7 @@ async def test_final_statistics() -> None:
             [Request.from_url(f'https://someplace.com/?id={id}', label='start') for id in range(50)]
         ),
         max_request_retries=3,
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -515,7 +528,7 @@ async def test_final_statistics() -> None:
 
 
 async def test_crawler_get_storages() -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
 
     rp = await crawler.get_request_provider()
     assert isinstance(rp, RequestQueue)
@@ -528,7 +541,7 @@ async def test_crawler_get_storages() -> None:
 
 
 async def test_crawler_run_requests(httpbin: URL) -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
     seen_urls = list[str]()
 
     @crawler.router.default_handler
@@ -548,7 +561,7 @@ async def test_crawler_run_requests(httpbin: URL) -> None:
 
 
 async def test_context_push_and_get_data(httpbin: URL) -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
     dataset = await Dataset.open()
 
     await dataset.push_data('{"a": 1}')
@@ -569,7 +582,7 @@ async def test_context_push_and_get_data(httpbin: URL) -> None:
 
 
 async def test_context_push_and_get_data_handler_error() -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
 
     @crawler.router.default_handler
     async def handler(context: BasicCrawlingContext) -> None:
@@ -585,7 +598,7 @@ async def test_context_push_and_get_data_handler_error() -> None:
 
 
 async def test_crawler_push_and_export_data(tmp_path: Path) -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
     dataset = await Dataset.open()
 
     await dataset.push_data([{'id': 0, 'test': 'test'}, {'id': 1, 'test': 'test'}])
@@ -603,7 +616,7 @@ async def test_crawler_push_and_export_data(tmp_path: Path) -> None:
 
 
 async def test_context_push_and_export_data(httpbin: URL, tmp_path: Path) -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
 
     @crawler.router.default_handler
     async def handler(context: BasicCrawlingContext) -> None:
@@ -625,7 +638,7 @@ async def test_context_push_and_export_data(httpbin: URL, tmp_path: Path) -> Non
 
 
 async def test_crawler_push_and_export_data_and_json_dump_parameter(httpbin: URL, tmp_path: Path) -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
 
     @crawler.router.default_handler
     async def handler(context: BasicCrawlingContext) -> None:
@@ -652,7 +665,7 @@ async def test_crawler_push_and_export_data_and_json_dump_parameter(httpbin: URL
 
 
 async def test_crawler_push_data_over_limit() -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
 
     @crawler.router.default_handler
     async def handler(context: BasicCrawlingContext) -> None:
@@ -664,7 +677,7 @@ async def test_crawler_push_data_over_limit() -> None:
 
 
 async def test_context_update_kv_store() -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
 
     @crawler.router.default_handler
     async def handler(context: BasicCrawlingContext) -> None:
@@ -691,6 +704,7 @@ async def test_max_requests_per_crawl(httpbin: URL) -> None:
     crawler = BasicCrawler(
         concurrency_settings=ConcurrencySettings(max_concurrency=1),
         max_requests_per_crawl=3,
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.default_handler
@@ -716,6 +730,7 @@ async def test_max_crawl_depth(httpbin: URL) -> None:
         concurrency_settings=ConcurrencySettings(max_concurrency=1),
         max_crawl_depth=2,
         request_provider=RequestList([start_request]),
+        _context_pipeline=ContextPipeline()
     )
 
     @crawler.router.handler('start')
@@ -735,13 +750,13 @@ async def test_max_crawl_depth(httpbin: URL) -> None:
 
 
 def test_crawler_log() -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
     assert isinstance(crawler.log, logging.Logger)
     crawler.log.info('Test log message')
 
 
 async def test_consecutive_runs_purge_request_queue() -> None:
-    crawler = BasicCrawler()
+    crawler = BasicCrawler(_context_pipeline=ContextPipeline())
     visit = Mock()
 
     @crawler.router.default_handler
@@ -763,7 +778,7 @@ async def test_consecutive_runs_purge_request_queue() -> None:
 async def test_passes_configuration_to_storages() -> None:
     configuration = Configuration(persist_storage=False, purge_on_start=True)
 
-    crawler = BasicCrawler(configuration=configuration)
+    crawler = BasicCrawler(configuration=configuration, _context_pipeline=ContextPipeline())
 
     dataset = await crawler.get_dataset()
     assert dataset._configuration is configuration
@@ -778,7 +793,7 @@ async def test_passes_configuration_to_storages() -> None:
 
 async def test_respects_no_persist_storage() -> None:
     configuration = Configuration(persist_storage=False)
-    crawler = BasicCrawler(configuration=configuration)
+    crawler = BasicCrawler(configuration=configuration, _context_pipeline=ContextPipeline())
 
     @crawler.router.default_handler
     async def handler(context: BasicCrawlingContext) -> None:
@@ -792,7 +807,7 @@ async def test_logs_final_statistics(monkeypatch: pytest.MonkeyPatch, caplog: py
     # Set the log level to INFO to capture the final statistics log.
     caplog.set_level(logging.INFO)
 
-    crawler = BasicCrawler(configure_logging=False)
+    crawler = BasicCrawler(configure_logging=False, _context_pipeline=ContextPipeline())
 
     @crawler.router.default_handler
     async def handler(context: BasicCrawlingContext) -> None:

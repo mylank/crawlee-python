@@ -182,7 +182,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
         event_manager: EventManager | None = None,
         configure_logging: bool = True,
         max_crawl_depth: int | None = None,
-        _context_pipeline: _ContextPipeline[TCrawlingContext] | None = None,
+        _context_pipeline: _ContextPipeline[TCrawlingContext],
         _additional_context_managers: Sequence[AsyncContextManager] | None = None,
         _logger: logging.Logger | None = None,
     ) -> None:
@@ -225,9 +225,7 @@ class BasicCrawler(Generic[TCrawlingContext]):
 
         self._http_client = http_client or HttpxHttpClient()
 
-        # TODO: figure out mypy problem
-        self._context_pipeline = (_context_pipeline or ContextPipeline()).compose(self._check_url_after_redirects)
-        #self._context_pipeline = _context_pipeline.compose(self._check_url_after_redirects)
+        self._context_pipeline = _context_pipeline.compose(self._check_url_after_redirects)
 
         self._error_handler: ErrorHandler[TCrawlingContext | BasicCrawlingContext] | None = None
         self._failed_request_handler: FailedRequestHandler[TCrawlingContext | BasicCrawlingContext] | None = None
