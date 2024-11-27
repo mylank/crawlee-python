@@ -9,6 +9,9 @@ from crawlee.sessions._models import SessionModel, SessionPoolModel
 SESSION_CREATED_AT = datetime.now(timezone.utc)
 
 
+pytestmark = pytest.mark.only
+
+
 @pytest.fixture
 def session_direct() -> SessionModel:
     """Provide a SessionModel instance directly using fixed parameters."""
@@ -91,7 +94,7 @@ def test_create_session_pool_with_direct_sessions(session_direct: SessionModel) 
         retired_session_count=0,
         sessions=[session_direct],
     )
-    session_pool.sessions = [session_direct]
+    assert session_pool.sessions == [session_direct]
 
 
 def test_create_session_pool_with_args_sessions(session_args_camel: dict, session_args_snake: dict) -> None:
@@ -104,6 +107,6 @@ def test_create_session_pool_with_args_sessions(session_args_camel: dict, sessio
         session_count=0,
         usable_session_count=0,
         retired_session_count=0,
-        sessions=[session_args_camel, session_args_snake],
+        sessions=[session_args_camel, session_args_snake],  # type: ignore (pydantic plugin)
     )
-    session_pool_camel.sessions = [SessionModel(**session_args_camel), SessionModel(**session_args_snake)]
+    assert session_pool_camel.sessions == [SessionModel(**session_args_camel), SessionModel(**session_args_snake)]

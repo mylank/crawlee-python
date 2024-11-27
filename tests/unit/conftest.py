@@ -63,7 +63,7 @@ def memory_storage_client(tmp_path: Path) -> MemoryStorageClient:
     cfg = Configuration(
         write_metadata=True,
         persist_storage=True,
-        crawlee_storage_dir=str(tmp_path),  # type: ignore
+        crawlee_storage_dir=str(tmp_path),  # type: ignore[arg-type]
     )
     return MemoryStorageClient(cfg)
 

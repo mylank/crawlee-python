@@ -73,7 +73,6 @@ yarl = "^1.18.0"
 build = "~1.2.0"
 filelock = "~3.16.0"
 ipdb = "~0.13.0"
-mypy = "~1.13.0"
 pre-commit = "~4.0.0"
 proxy-py = "~2.4.0"
 pydoc-markdown = "~4.8.0"
@@ -91,6 +90,7 @@ types-beautifulsoup4 = "~4.12.0.20240229"
 types-colorama = "~0.4.15.20240106"
 types-psutil = "~5.9.5.20240205"
 types-python-dateutil = "~2.9.0.20240316"
+basedpyright = "^1.22.0"
 
 [tool.poetry.extras]
 all = ["apify", "beautifulsoup4", "lxml", "html5lib", "curl-cffi", "playwright"]
@@ -121,7 +121,6 @@ ignore = [
     "G004",     # Logging statement uses f-string
     "ISC001",   # This rule may cause conflicts when used with the formatter
     "FIX",      # flake8-fixme
-    "PGH003",   # Use specific rule codes when ignoring type issues
     "PLR0911",  # Too many return statements
     "PLR0913",  # Too many arguments in function definition
     "PLR0915",  # Too many statements
@@ -190,29 +189,28 @@ asyncio_default_fixture_loop_scope = "function"
 asyncio_mode = "auto"
 timeout = 1200
 
-[tool.mypy]
-python_version = "3.9"
-plugins = ["pydantic.mypy"]
-files = ["src", "tests"]
-check_untyped_defs = true
-disallow_incomplete_defs = true
-disallow_untyped_calls = true
-disallow_untyped_decorators = true
-disallow_untyped_defs = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_return_any = true
-warn_unreachable = true
-warn_unused_ignores = true
-exclude = [
+[tool.basedpyright]
+pythonVersion = "3.9"
+typeCheckingMode = "standard"
+include = ["src", "tests", "docs"]
+ignore = [
     "docs/introduction/code/08_main.py",
 ]
 
-[tool.mypy-scrapy]
-ignore_missing_imports = true
+# python_version = "3.9"
+# plugins = ["pydantic.basedpyright"]
+# files = ["src", "tests"]
+# check_untyped_defs = true
+# disallow_incomplete_defs = true
+# disallow_untyped_calls = true
+# disallow_untyped_decorators = true
+# disallow_untyped_defs = true
+# no_implicit_optional = true
+# warn_redundant_casts = true
+# warn_return_any = true
+# warn_unreachable = true
+# warn_unused_ignores = true
 
-[tool.mypy-sortedcollections]
-ignore_missing_imports = true
 
 [tool.coverage.report]
 exclude_lines = [
@@ -220,9 +218,6 @@ exclude_lines = [
     "if TYPE_CHECKING:",
     "assert_never()",
 ]
-
-[tool.basedpyright]
-typeCheckingMode = "standard"
 
 [tool.ipdb]
 context = 7

@@ -92,7 +92,7 @@ class HttpHeaders(RootModel, Mapping[str, str]):
         combined_headers = {**other, **self.root}
         return HttpHeaders(combined_headers)
 
-    def __iter__(self) -> Iterator[str]:  # type: ignore
+    def __iter__(self) -> Iterator[str]:  # type: ignore[arg-type]
         yield from self.root
 
     def __len__(self) -> int:
@@ -277,7 +277,7 @@ class EnqueueLinksFunction(Protocol):
         label: str | None = None,
         user_data: dict[str, Any] | None = None,
         **kwargs: Unpack[EnqueueLinksKwargs],
-    ) -> Coroutine[None, None, None]:
+    ) -> Coroutine[None, None, None]:  # type: ignore[report-return-type]
         """A call dunder method.
 
         Args:

@@ -23,18 +23,18 @@ class HttpResponse(Protocol):
     """This protocol defines the interface that any HTTP response object must implement."""
 
     @property
-    def http_version(self) -> str:
+    def http_version(self) -> str:  # type: ignore[arg-type]
         """The HTTP version used in the response."""
 
     @property
-    def status_code(self) -> int:
+    def status_code(self) -> int:  # type: ignore[arg-type]
         """The HTTP status code received from the server."""
 
     @property
-    def headers(self) -> HttpHeaders:
+    def headers(self) -> HttpHeaders:  # type: ignore[arg-type]
         """The HTTP headers received in the response."""
 
-    def read(self) -> bytes:
+    def read(self) -> bytes:  # type: ignore[arg-type]
         """Read the content of the response body."""
 
 

@@ -143,8 +143,7 @@ class MemoryStorageClient(BaseStorageClient):
         async with self._purge_lock:
             # Another check under the lock just to be sure
             if self._purged_on_start is True:
-                # Mypy doesn't understand that the _purged_on_start can change while we're getting the async lock
-                return  # type: ignore[unreachable]
+                return
 
             await self._purge_default_storages()
             self._purged_on_start = True
@@ -166,7 +165,7 @@ class MemoryStorageClient(BaseStorageClient):
             if storage_client.id == id or (
                 storage_client.name and name and storage_client.name.lower() == name.lower()
             ):
-                return storage_client  # pyright: ignore
+                return storage_client  # type: ignore[arg-type]
 
         return None
 

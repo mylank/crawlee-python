@@ -243,9 +243,14 @@ async def test_snapshots_time_ordered() -> None:
 
     def create_event_data(creation_time: datetime) -> EventSystemInfoData:
         return EventSystemInfoData(
-            cpu_info=CpuInfo(used_ratio=0.5, created_at=creation_time),
+            cpu_info=CpuInfo(
+                used_ratio=0.5,
+                created_at=creation_time,  # type: ignore[arg-type] (pydantic)
+            ),
             memory_info=MemoryInfo(
-                current_size=ByteSize(bytes=1), created_at=creation_time, total_size=ByteSize(bytes=2)
+                current_size=ByteSize(bytes=1),
+                created_at=creation_time,  # type: ignore[arg-type] (pydantic)
+                total_size=ByteSize(bytes=2),
             ),
         )
 

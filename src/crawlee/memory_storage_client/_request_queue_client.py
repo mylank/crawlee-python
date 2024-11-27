@@ -9,7 +9,7 @@ from decimal import Decimal
 from logging import getLogger
 from typing import TYPE_CHECKING
 
-from sortedcollections import ValueSortedDict  # type: ignore
+from sortedcollections import ValueSortedDict
 from typing_extensions import override
 
 from crawlee._types import StorageTypes
@@ -69,7 +69,7 @@ class RequestQueueClient(BaseRequestQueueClient):
         self.handled_request_count = handled_request_count
         self.pending_request_count = pending_request_count
 
-        self.requests = ValueSortedDict(lambda request: request.order_no or -float('inf'))
+        self.requests = ValueSortedDict(lambda request: request.order_no or -float('inf'))  # type: ignore[arg-type]
         self.file_operation_lock = asyncio.Lock()
         self._last_used_timestamp = Decimal(0.0)
 
@@ -292,7 +292,7 @@ class RequestQueueClient(BaseRequestQueueClient):
         async with existing_queue_by_id.file_operation_lock:
             await existing_queue_by_id.update_timestamps(has_been_modified=False)
 
-            request: Request = existing_queue_by_id.requests.get(request_id)
+            request: Request = existing_queue_by_id.requests.get(request_id)  # type: ignore[arg-type]
             return self._json_to_request(request.json_ if request is not None else None)
 
     @override
