@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 @docs_group('Data structures')
 class HttpResponse(Protocol):
-    """This protocol defines the interface that any HTTP response object must implement."""
+    """Define the interface that any HTTP response object must implement."""
 
     @property
     def http_version(self) -> str:

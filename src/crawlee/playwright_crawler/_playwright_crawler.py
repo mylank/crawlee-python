@@ -151,7 +151,7 @@ class PlaywrightCrawler(BasicCrawler[PlaywrightCrawlingContext]):
         self,
         context: PlaywrightPreNavigationContext,
     ) -> AsyncGenerator[PlaywrightCrawlingContext, None]:
-        """Executes an HTTP request utilizing the `BrowserPool` and the `Playwright` library.
+        """Execute an HTTP request utilizing the `BrowserPool` and the `Playwright` library.
 
         Args:
             context: The basic crawling context to be enhanced.

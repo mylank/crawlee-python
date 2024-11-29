@@ -106,7 +106,7 @@ def test_determine_file_extension() -> None:
     assert determine_file_extension('APPLICATION/JSON') == 'json'
     assert determine_file_extension('application/json;charset=utf-8') == 'json'
 
-    # Returns None for non-existent content types
+    # Return None for non-existent content types
     assert determine_file_extension('clearly not a content type') is None
     assert determine_file_extension('') is None
 

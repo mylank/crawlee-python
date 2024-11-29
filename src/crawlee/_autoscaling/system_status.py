@@ -69,7 +69,7 @@ class SystemStatus:
         self._client_overload_threshold = client_overload_threshold
 
     def get_current_system_info(self) -> SystemInfo:
-        """Retrieves and evaluates the current status of system resources.
+        """Retrieve and evaluates the current status of system resources.
 
         Considers snapshots within the `_max_snapshot_age` timeframe and determines if the system is currently
         overloaded based on predefined thresholds for each resource type.
@@ -80,7 +80,7 @@ class SystemStatus:
         return self._get_system_info(sample_duration=self._max_snapshot_age)
 
     def get_historical_system_info(self) -> SystemInfo:
-        """Retrieves and evaluates the historical status of system resources.
+        """Retrieve and evaluates the historical status of system resources.
 
         Considers the entire history of snapshots from the Snapshotter to assess long-term system performance and
         determines if the system has been historically overloaded.

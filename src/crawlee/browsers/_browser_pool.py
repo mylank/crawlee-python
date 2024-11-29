@@ -153,7 +153,7 @@ class BrowserPool:
 
     @property
     def total_pages_count(self) -> int:
-        """Returns the total number of pages opened since the browser pool was launched."""
+        """Return the total number of pages opened since the browser pool was launched."""
         return self._total_pages_count
 
     @property

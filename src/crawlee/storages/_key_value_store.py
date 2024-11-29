@@ -120,7 +120,7 @@ class KeyValueStore(BaseStorage):
         """Get a value from the KVS.
 
         Args:
-            key: Key of the record to retrieve.
+            key: key of the record to retrieve
             default_value: Default value returned in case the record does not exist.
 
         Returns:

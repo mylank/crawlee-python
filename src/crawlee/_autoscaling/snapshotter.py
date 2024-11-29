@@ -176,7 +176,7 @@ class Snapshotter:
 
     @ensure_context
     def get_memory_sample(self, duration: timedelta | None = None) -> list[Snapshot]:
-        """Returns a sample of the latest memory snapshots.
+        """Return a sample of the latest memory snapshots.
 
         Args:
             duration: The duration of the sample from the latest snapshot. If omitted, it returns a full history.
@@ -189,7 +189,7 @@ class Snapshotter:
 
     @ensure_context
     def get_event_loop_sample(self, duration: timedelta | None = None) -> list[Snapshot]:
-        """Returns a sample of the latest event loop snapshots.
+        """Return a sample of the latest event loop snapshots.
 
         Args:
             duration: The duration of the sample from the latest snapshot. If omitted, it returns a full history.
@@ -202,7 +202,7 @@ class Snapshotter:
 
     @ensure_context
     def get_cpu_sample(self, duration: timedelta | None = None) -> list[Snapshot]:
-        """Returns a sample of the latest CPU snapshots.
+        """Return a sample of the latest CPU snapshots.
 
         Args:
             duration: The duration of the sample from the latest snapshot. If omitted, it returns a full history.
@@ -215,7 +215,7 @@ class Snapshotter:
 
     @ensure_context
     def get_client_sample(self, duration: timedelta | None = None) -> list[Snapshot]:
-        """Returns a sample of the latest client snapshots.
+        """Return a sample of the latest client snapshots.
 
         Args:
             duration: The duration of the sample from the latest snapshot. If omitted, it returns a full history.
@@ -228,7 +228,7 @@ class Snapshotter:
 
     @staticmethod
     def _get_sample(snapshots: list[Snapshot], duration: timedelta | None = None) -> list[Snapshot]:
-        """Returns a time-limited sample from snapshots or full history if duration is None."""
+        """Return a time-limited sample from snapshots or full history if duration is None."""
         if not duration:
             return snapshots
 

@@ -105,7 +105,7 @@ class BeautifulSoupCrawler(BasicCrawler[BeautifulSoupCrawlingContext]):
         super().__init__(**kwargs)
 
     async def _make_http_request(self, context: BasicCrawlingContext) -> AsyncGenerator[HttpCrawlingContext, None]:
-        """Executes an HTTP request using a configured HTTP client.
+        """Execute an HTTP request using a configured HTTP client.
 
         Args:
             context: The crawling context from the `BasicCrawler`.

@@ -37,23 +37,23 @@ class RequestProvider(ABC):
 
     @abstractmethod
     async def get_total_count(self) -> int:
-        """Returns an offline approximation of the total number of requests in the queue (i.e. pending + handled)."""
+        """Return an offline approximation of the total number of requests in the queue (i.e. pending + handled)."""
 
     @abstractmethod
     async def is_empty(self) -> bool:
-        """Returns True if there are no more requests in the queue (there might still be unfinished requests)."""
+        """Return True if there are no more requests in the queue (there might still be unfinished requests)."""
 
     @abstractmethod
     async def is_finished(self) -> bool:
-        """Returns True if all requests have been handled."""
+        """Return True if all requests have been handled."""
 
     @abstractmethod
     async def drop(self) -> None:
-        """Removes the queue either from the Apify Cloud storage or from the local database."""
+        """Remove the queue either from the Apify Cloud storage or from the local database."""
 
     @abstractmethod
     async def fetch_next_request(self) -> Request | None:
-        """Returns a next request in the queue to be processed, or `null` if there are no more pending requests."""
+        """Return a next request in the queue to be processed, or `null` if there are no more pending requests."""
 
     @abstractmethod
     async def reclaim_request(self, request: Request, *, forefront: bool = False) -> ProcessedRequest | None:
@@ -64,11 +64,11 @@ class RequestProvider(ABC):
 
     @abstractmethod
     async def mark_request_as_handled(self, request: Request) -> ProcessedRequest | None:
-        """Marks a request as handled after a successful processing (or after giving up retrying)."""
+        """Mark a request as handled after a successful processing (or after giving up retrying)."""
 
     @abstractmethod
     async def get_handled_count(self) -> int:
-        """Returns the number of handled requests."""
+        """Return the number of handled requests."""
 
     @abstractmethod
     async def add_request(
@@ -111,7 +111,7 @@ class RequestProvider(ABC):
             await self.add_request(request)
 
     def _transform_request(self, request: str | Request) -> Request:
-        """Transforms a request-like object into a Request object."""
+        """Transform a request-like object into a Request object."""
         if isinstance(request, Request):
             return request
 
@@ -121,7 +121,7 @@ class RequestProvider(ABC):
         raise ValueError(f'Invalid request type: {type(request)}')
 
     def _transform_requests(self, requests: Sequence[str | Request]) -> list[Request]:
-        """Transforms a list of request-like objects into a list of Request objects."""
+        """Transform a list of request-like objects into a list of Request objects."""
         processed_requests = dict[str, Request]()
 
         for request in requests:
